@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Discord;
+using Discord.WebSocket;
+using System;
+using System.Threading.Tasks;
 
 class Program
 {
-    static void Main(string[] args)
-    {
-        Console.WriteLine("Hello World!");
-    }
+    // Convert our sync-main to an async main method
+    static void Main(string[] args) => new Nerdbot.Nerdbot().RunAndBlockAsync().GetAwaiter().GetResult();
 }
