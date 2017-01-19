@@ -1,10 +1,13 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using Nerdbot.Utilities.Fortuna;
+using Nerdbot.Utilities.Fortuna.Extensions;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nerdbot
@@ -56,7 +59,7 @@ namespace Nerdbot
             // Hook into the MessageReceived event on DiscordSocketClient
             Client.MessageReceived += async (message) =>
             {
-                await ProcessMessage(message);
+                await ProcessMessageAsync(message);
             };
         }
 
@@ -71,9 +74,7 @@ namespace Nerdbot
             try
             {
                 var logConfig = new LoggingConfiguration();
-                var consoleTarget = new ColoredConsoleTarget();
-
-                consoleTarget.Layout = @"${date:format=HH\:mm\:ss} ${logger} | ${message}";
+                var consoleTarget = new ColoredConsoleTarget() { Layout = @"${date:format=HH\:mm\:ss} ${logger} | ${message}" };
 
                 logConfig.AddTarget("Console", consoleTarget);
 
@@ -87,37 +88,65 @@ namespace Nerdbot
             }
         }
 
-        private static async Task ProcessMessage(SocketMessage message)
+        private static async Task ProcessMessageAsync(SocketMessage message)
         {
-            var messageParts = message.Content.Split(' ');
-            if(messageParts.Length > 0)
+            if(!message.Author.IsBot)
             {
-                if(messageParts[0] == "/r")
+                var messageParts = message.Content.Split(' ');
+                if(messageParts.Length > 0)
                 {
-                    ProcessRandomNumber(messageParts, message);
+                    if(messageParts[0] == "!help")
+                    {
+                        await ProcessHelpAsync(messageParts, message);
+                    }
+                    else if(messageParts[0] == "/r")
+                    {
+                        await ProcessRandomNumberAsync(messageParts, message);
+                    }
                 }
+            }
+            
+        }
+
+        private static async Task ProcessHelpAsync(string[] messageParts, SocketMessage message)
+        {
+            if(messageParts.Length == 1)
+            {
+                var returnMessage = "Nerdbot Version: " + Version.FullVersionString + Environment.NewLine;
+                returnMessage += "Syntax:" + Environment.NewLine;
+                returnMessage += "/r <number> - Roll a number between 0 and <number>" + Environment.NewLine;
+                await message.Channel.SendMessageAsync(returnMessage);
+            }
+            else
+            {
+                await message.Channel.SendMessageAsync(ErrorMessages.Syntax);
             }
         }
 
-        private static void ProcessRandomNumber(string[] messageParts, SocketMessage message)
+        private static async Task ProcessRandomNumberAsync(string[] messageParts, SocketMessage message)
         {
             var total = 0;
-            var rnd = new Random();
+            var tokenSource = new CancellationTokenSource();
+            var token = tokenSource.Token;
+            var rng = await PRNGFortunaProviderFactory.CreateAsync(token) as PRNGFortunaProvider;
 
-            if(messageParts.Length == 2)
+            if (messageParts.Length == 2)
             {
-                var result = 0;
-                if(int.TryParse(messageParts[1], out result) && result >= 0)
+                if(int.TryParse(messageParts[1], out var result) && result >= 0)
                 {
-                    total = rnd.Next(result + 1);
+                    total = IPRNGFortunaProviderExtensions.RandomNumber(rng, result + 1);
                 }
                 else
                 {
-                    message.Channel.SendMessageAsync("Syntax Invalid: " + messageParts[0] + " " + messageParts[1]);
+                    await message.Channel.SendMessageAsync(ErrorMessages.Syntax);
                 }
             }
+            else
+            {
+                await message.Channel.SendMessageAsync(ErrorMessages.Syntax);
+            }
 
-            message.Channel.SendMessageAsync("Total: " + total);
+            await message.Channel.SendMessageAsync("Total: " + total);
         }
     }
 }

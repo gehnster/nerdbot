@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbot", "Nerdbot\Nerdbot.csproj", "{F32D9A20-D797-493C-938D-B922FB21A68B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbot.Tests", "Nerdbot.Tests\Nerdbot.Tests.csproj", "{35A0F3AC-6B79-4219-8D37-6C19A59525D5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F32D9A20-D797-493C-938D-B922FB21A68B} = {F32D9A20-D797-493C-938D-B922FB21A68B}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{12033566-86D8-4959-93F4-6B0142BD10A7}"
 	ProjectSection(SolutionItems) = preProject
