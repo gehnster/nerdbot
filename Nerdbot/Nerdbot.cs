@@ -1,11 +1,10 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Nerdbot.Utilities.Fortuna;
 using Nerdbot.Utilities.Fortuna.Extensions;
-using NLog;
-using NLog.Config;
-using NLog.Targets;
+using NLogLogger;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +13,7 @@ namespace Nerdbot
 {
     class Nerdbot
     {
-        private Logger _log;
+        private static ILogger _log = new NLogConsoleLogger(typeof(Nerdbot).Name);
         public static Color OkColor { get; } = new Color(0x71cd40);
         public static Color ErrorColor { get; } = new Color(0xee281f);
         public static DiscordShardedClient Client { get; private set; }
@@ -23,7 +22,6 @@ namespace Nerdbot
 
         static Nerdbot()
         {
-            SetupLogger();
             Configuration = new BotConfiguration();
             Service = new ServiceCollection();
             ConfigureServices();
@@ -36,9 +34,8 @@ namespace Nerdbot
 
         public async Task RunAsync(params string[] args)
         {
-            _log = LogManager.GetCurrentClassLogger();
 
-            _log.Info("Starting Nerdbot");
+            _log.InfoLogging("Starting Nerdbot");
 
             //create client
             Client = new DiscordShardedClient(new DiscordSocketConfig
@@ -55,7 +52,7 @@ namespace Nerdbot
             await Client.ConnectAsync().ConfigureAwait(false);
             await Client.DownloadAllUsersAsync().ConfigureAwait(false);
 
-            _log.Info("Connected");
+            _log.InfoLogging("Connected");
             // Hook into the MessageReceived event on DiscordSocketClient
             Client.MessageReceived += async (message) =>
             {
@@ -67,25 +64,6 @@ namespace Nerdbot
         {
             await RunAsync(args).ConfigureAwait(false);
             await Task.Delay(-1).ConfigureAwait(false);
-        }
-
-        private static void SetupLogger()
-        {
-            try
-            {
-                var logConfig = new LoggingConfiguration();
-                var consoleTarget = new ColoredConsoleTarget() { Layout = @"${date:format=HH\:mm\:ss} ${logger} | ${message}" };
-
-                logConfig.AddTarget("Console", consoleTarget);
-
-                logConfig.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, consoleTarget));
-
-                LogManager.Configuration = logConfig;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
         }
 
         private static async Task ProcessMessageAsync(SocketMessage message)
